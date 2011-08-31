@@ -4,30 +4,37 @@
 
 
 class Worker
-  def initialize
+  def initialize(queue)
     @redis = EM::Hiredis.connect 
-    puts MultiJson.encode({:hello => 3})
-    @redis.lpush 'hello', MultiJson.encode({:hello => 3}) 
-
+    @queue = queue
   end  
   
-  def work
-    @redis.blpop('hello', 0).callback { |key, value|
-      
-      #puts "Key #{key}"
-      puts "Value #{value}"
+  def start(&block)
+    @block = block  
+    
+    perform
+  end
+  
+  def perform
+    @redis.blpop(@queue, 0).callback { |key, data|
 
-      puts MultiJson.decode(value)
-      
+      #TODO: catch parse exception
+      @block.call(MultiJson.decode(data)) 
         
-        self.work
+      EM.next_tick{ perform }
     }   
   end  
 end 
   
 EventMachine.run {
+   
+  worker = Worker.new("jettaxi:notifications")
   
-  
-  worker = Worker.new
-  worker.work
+  worker.start do |data|
+    puts data
+    puts 'privet'
+  end  
+
 }
+
+

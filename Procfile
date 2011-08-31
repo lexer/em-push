@@ -1,1 +1,1 @@
-worker: bundle exec ruby server.rb -p $PORT
+govno: bundle exec ruby server.rb -p $PORT
